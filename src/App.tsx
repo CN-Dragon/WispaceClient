@@ -1,13 +1,13 @@
-import { useState } from 'react'
+import EditorView from './pages/EditorView'
+import Icons from "./components/Icons.tsx";
 
 function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <div className="flex"></div>
-    </>
-  )
+    return (
+        <>
+            <Icons/>
+            <EditorView/>
+        </>
+    )
 }
 
 export default App
