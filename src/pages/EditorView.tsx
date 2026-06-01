@@ -1,41 +1,60 @@
-import {useState, useRef} from 'react';
-import {Canvas} from '@react-three/fiber';
+import React, {useRef, useState} from 'react';
+import {Canvas, useThree} from '@react-three/fiber';
 import {OrbitControls, Grid, TransformControls, GizmoHelper, GizmoViewport} from '@react-three/drei';
+import {Mesh} from 'three';
+import {OpenAI} from "openai";
+import {jsonrepair} from "jsonrepair";
 
-export default function Editor() {
-    // 选中的物体
-    const [selected, setSelected] = useState();
+const ICON_CLASS = 'w-8 h-8 rounded cursor-pointer text-[#555] hover:text-black hover:scale-110';
+
+type Mode = 'scale' | 'translate' | 'rotate';
+type Geometries = 'boxGeometry' | 'sphereGeometry';
+
+const openai = new OpenAI({
+    baseURL: 'https://api.deepseek.com',
+    apiKey: '',
+    dangerouslyAllowBrowser: true
+});
+
+export default function EditorView() {
+    // 选中实例物体
+    const [selected, setSelected] = useState<Mesh | null>(null);
+    // 几何体实例
+    const [objects, setObjects] = useState<{
+        id: string
+        type: Geometries
+        pos: [x: number, y: number, z: number]
+        size: [width: number, height: number, depth: number]
+        color: string
+    }[]>([
+        // {id: '1', type: "boxGeometry", pos: [0, 0, 0]}, {id: '2', type: "sphereGeometry", pos: [1, 1, 1]}
+    ]);
+
     // 模式：移动 / 旋转 / 拉伸
-    const [mode, setMode] = useState<'translate' | 'rotate' | 'scale'>('translate');
-    // 物体引用
-    const boxRef = useRef(null);
+    const [mode, setMode] = useState<Mode>('translate');
 
-    const ICON_CLASS = 'rounded cursor-pointer p-1 w-8 h-8';
+    // 添加几何体实例
+    const addObject = (value: Geometries) => {
+        setObjects([
+            ...objects,
+            {id: Math.random().toString(36).slice(2), type: value, pos: [0, 0, 0], size: [1, 1, 1], color: '#fff'}
+        ]);
+    };
+
+    const addObjects = (values: any) => {
+        setObjects([
+            ...objects,
+            ...values
+        ]);
+    };
+
 
     return (
-        <div style={{width: '100vw', height: '100vh'}}>
-            <div className={'absolute z-1 rounded p-1 m-5'} style={{backgroundColor: '#fff'}}>
-                <svg className={ICON_CLASS}
-                     style={{backgroundColor: mode === 'translate' ? '#ddd' : 'transparent', color: '#555'}}
-                     onClick={() => setMode('translate')}>
-                    <use xlinkHref={'#translate'}/>
-                </svg>
-                <svg
-                    className={ICON_CLASS}
-                    style={{backgroundColor: mode === 'rotate' ? '#ddd' : 'transparent', color: '#555'}}
-                    onClick={() => setMode('rotate')}>
-                    <use xlinkHref={'#rotate'}/>
-                </svg>
-                <svg
-                    className={ICON_CLASS}
-                    style={{backgroundColor: mode === 'scale' ? '#ddd' : 'transparent', color: '#555'}}
-                    onClick={() => setMode('scale')}>
-                    <use xlinkHref={'#scale'}/>
-                </svg>
-            </div>
-
-            <Canvas camera={{position: [0, 2, 5], fov: 50}}
-                    onPointerMissed={() => setSelected(null)}>
+        <section className={'w-4/5 h-full relative'}>
+            <ModeBox mode={mode} setMode={setMode}/>
+            <GeometriesBox addObject={addObject}/>
+            <DialogBox addObjects={addObjects}/>
+            <Canvas camera={{position: [0, 3, 5], fov: 80}} onPointerMissed={() => setSelected(null)}>
                 {/* 灰色背景 */}
                 <color attach="background" args={['rgb(170, 170, 170)']}/>
 
@@ -48,26 +67,14 @@ export default function Editor() {
                     args={[30, 30]}
                     cellSize={1}
                     sectionSize={5}
-                    cellColor="#555555"
-                    sectionColor="#888888"
+                    cellColor="#555"
+                    sectionColor="#888"
                 />
 
                 {/* 坐标轴指示器 */}
                 <GizmoHelper alignment="top-right" margin={[70, 70]}>
                     <GizmoViewport/>
                 </GizmoHelper>
-
-                {/* 几何体 */}
-                <mesh
-                    ref={boxRef}
-                    position={[0, 0, 0]}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        setSelected(boxRef.current);
-                    }}>
-                    <boxGeometry args={[1, 1, 1]}/>
-                    <meshStandardMaterial color="orange"/>
-                </mesh>
 
                 {/* 镜头控制器 */}
                 <OrbitControls makeDefault/>
@@ -77,7 +84,104 @@ export default function Editor() {
                     object={selected}
                     mode={mode}
                 />}
+
+                {/* 遍历生成几何体 */}
+                {objects.map((obj) => (
+                    <mesh key={obj.id} position={obj.pos}
+                          onClick={(e) => {
+                              setSelected(e.object as Mesh);
+                          }}>
+                        {{
+                            boxGeometry: <boxGeometry args={obj.size}/>,
+                            sphereGeometry: <sphereGeometry args={[0.7, 32, 32]}/>
+                        }[obj.type]}
+                        <meshStandardMaterial color={obj.color}/>
+                    </mesh>
+                ))}
             </Canvas>
-        </div>
+        </section>
     );
+}
+
+function DialogBox({addObjects}: { addObjects: (values: any) => void }) {
+    const input = useRef<HTMLTextAreaElement>(null);
+
+    const handleKeyDown = async (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (input.current) {
+                const completion = await openai.chat.completions.create({
+                    messages: [
+                        {
+                            role: "system",
+                            content: "你是专业的3D建模师，精通 Three.js 的几何体、材质、网格以及物体结构和场景结构，请根据用户描述生成模型。\n" +
+                                "支持的类型: boxGeometry\n" +
+                                "输出格式为 JSON，示例：{result: [{type: 'boxGeometry', pos: [x,y,z], " +
+                                "size: [width,height,depth], color: '#fff'},...]}"
+                        },
+                        {
+                            "role": "user",
+                            "content": input.current.value
+                        }],
+                    model: "deepseek-v4-flash",
+                });
+                const content = completion.choices[0].message.content;
+                const json = jsonrepair(content);
+                const result = JSON.parse(json).result;
+                console.log(result)
+                result.forEach((item) => {
+                    item.id = Math.random().toString(36).slice(2);
+                });
+                addObjects(result)
+                // input.current.value = ''
+            }
+        }
+    };
+
+    return (
+        <textarea
+            ref={input}
+            onKeyDown={handleKeyDown}
+            className={'bg-white rounded-lg focus:outline-none absolute w-150 min-h-20 p-2 z-1 bottom-10 left-1/2 -translate-x-1/2'}
+            style={{resize: 'none'}} placeholder={'发送消息进行Ai建模...'}/>
+    )
+}
+
+function GeometriesBox({addObject}: { addObject: (value: Geometries) => void }) {
+    return (
+        <div className={'flex gap-2 rounded p-1 bg-white absolute z-1 top-5 left-1/2 -translate-x-1/2'}>
+            <svg className={ICON_CLASS}
+                 onClick={() => addObject('boxGeometry')}>
+                <use xlinkHref={'#boxGeometry'}/>
+            </svg>
+            <svg className={ICON_CLASS}
+                 onClick={() => addObject('sphereGeometry')}>
+                <use xlinkHref={'#sphereGeometry'}/>
+            </svg>
+        </div>
+    )
+}
+
+function ModeBox({mode, setMode}: { mode: Mode, setMode: (value: Mode) => void }) {
+    return (
+        <div className={'flex flex-col gap-1 absolute z-1 rounded p-1 bg-white top-5 left-5'}>
+            <svg className={ICON_CLASS}
+                 style={{backgroundColor: mode === 'translate' ? '#ddd' : 'transparent', padding: 4}}
+                 onClick={() => setMode('translate')}>
+                <use xlinkHref={'#translate'}/>
+            </svg>
+            <svg
+                className={ICON_CLASS}
+                style={{backgroundColor: mode === 'rotate' ? '#ddd' : 'transparent', padding: 4}}
+                onClick={() => setMode('rotate')}>
+                <use xlinkHref={'#rotate'}/>
+            </svg>
+            <svg
+                className={ICON_CLASS}
+                style={{backgroundColor: mode === 'scale' ? '#ddd' : 'transparent', padding: 4}}
+                onClick={() => setMode('scale')}>
+                <use xlinkHref={'#scale'}/>
+            </svg>
+        </div>
+    )
 }
