@@ -1,5 +1,5 @@
 import React, {useRef, useState} from 'react';
-import {Canvas, useThree} from '@react-three/fiber';
+import {Canvas} from '@react-three/fiber';
 import {OrbitControls, Grid, TransformControls, GizmoHelper, GizmoViewport} from '@react-three/drei';
 import {Mesh} from 'three';
 import {OpenAI} from "openai";
@@ -7,12 +7,15 @@ import {jsonrepair} from "jsonrepair";
 
 const ICON_CLASS = 'w-8 h-8 rounded cursor-pointer text-[#555] hover:text-black hover:scale-110';
 
+const geometryList = ['Box', 'Capsule', 'Circle', 'Cone', 'Cylinder', 'Dodecahedron',
+    'Extrude', 'Icosahedron', 'Lathe', 'Octahedron', 'Plane','Ring','Shape','Sphere']
+
 type Mode = 'scale' | 'translate' | 'rotate';
-type Geometries = 'boxGeometry' | 'sphereGeometry';
+type Geometries = typeof geometryList[number];
 
 const openai = new OpenAI({
     baseURL: 'https://api.deepseek.com',
-    apiKey: '',
+    apiKey: 'sk-d8431c0fffb8401abe495b519a8e0f5b',
     dangerouslyAllowBrowser: true
 });
 
@@ -26,18 +29,22 @@ export default function EditorView() {
         pos: [x: number, y: number, z: number]
         size: [width: number, height: number, depth: number]
         color: string
-    }[]>([
-        // {id: '1', type: "boxGeometry", pos: [0, 0, 0]}, {id: '2', type: "sphereGeometry", pos: [1, 1, 1]}
-    ]);
+        roughness: number
+        metalness: number
+    }[]>([]);
 
     // 模式：移动 / 旋转 / 拉伸
     const [mode, setMode] = useState<Mode>('translate');
+    const [dragging, setDragging] = useState(false)
 
     // 添加几何体实例
     const addObject = (value: Geometries) => {
         setObjects([
             ...objects,
-            {id: Math.random().toString(36).slice(2), type: value, pos: [0, 0, 0], size: [1, 1, 1], color: '#fff'}
+            {
+                id: Math.random().toString(36).slice(2), type: value, pos: [0, 0, 0],
+                size: [1, 1, 1], color: '#fff', roughness: 1, metalness: 1
+            }
         ]);
     };
 
@@ -58,8 +65,9 @@ export default function EditorView() {
                 {/* 灰色背景 */}
                 <color attach="background" args={['rgb(170, 170, 170)']}/>
 
-                {/* 灯光 */}
+                {/* 环境光 */}
                 <ambientLight intensity={0.5}/>
+                {/* 方向光 */}
                 <directionalLight position={[5, 5, 5]} intensity={1}/>
 
                 {/* 网格水平线 */}
@@ -83,19 +91,23 @@ export default function EditorView() {
                 {selected && <TransformControls
                     object={selected}
                     mode={mode}
+                    onMouseDown={() => setDragging(true)}
+                    onMouseUp={() => setDragging(false)}
                 />}
 
                 {/* 遍历生成几何体 */}
                 {objects.map((obj) => (
                     <mesh key={obj.id} position={obj.pos}
                           onClick={(e) => {
+                              if (dragging) return
+                              e.stopPropagation();
                               setSelected(e.object as Mesh);
                           }}>
                         {{
-                            boxGeometry: <boxGeometry args={obj.size}/>,
-                            sphereGeometry: <sphereGeometry args={[0.7, 32, 32]}/>
+                            box: <boxGeometry args={obj.size}/>,
+                            sphere: <sphereGeometry args={[0.7, 32, 32]}/>
                         }[obj.type]}
-                        <meshStandardMaterial color={obj.color}/>
+                        <meshStandardMaterial color={obj.color} roughness={obj.roughness} metalness={obj.metalness}/>
                     </mesh>
                 ))}
             </Canvas>
@@ -117,7 +129,7 @@ function DialogBox({addObjects}: { addObjects: (values: any) => void }) {
                             content: "你是专业的3D建模师，精通 Three.js 的几何体、材质、网格以及物体结构和场景结构，请根据用户描述生成模型。\n" +
                                 "支持的类型: boxGeometry\n" +
                                 "输出格式为 JSON，示例：{result: [{type: 'boxGeometry', pos: [x,y,z], " +
-                                "size: [width,height,depth], color: '#fff'},...]}"
+                                "size: [width,height,depth], color: '#fff', roughness: 1, metalness: 1},...]}"
                         },
                         {
                             "role": "user",
@@ -150,14 +162,14 @@ function DialogBox({addObjects}: { addObjects: (values: any) => void }) {
 function GeometriesBox({addObject}: { addObject: (value: Geometries) => void }) {
     return (
         <div className={'flex gap-2 rounded p-1 bg-white absolute z-1 top-5 left-1/2 -translate-x-1/2'}>
-            <svg className={ICON_CLASS}
-                 onClick={() => addObject('boxGeometry')}>
-                <use xlinkHref={'#boxGeometry'}/>
-            </svg>
-            <svg className={ICON_CLASS}
-                 onClick={() => addObject('sphereGeometry')}>
-                <use xlinkHref={'#sphereGeometry'}/>
-            </svg>
+            {geometryList.map((geom) => (
+                <svg
+                    className={ICON_CLASS}
+                    onClick={() => addObject(geom)}
+                >
+                    <use xlinkHref={'#' + geom}/>
+                </svg>
+            ))}
         </div>
     )
 }

@@ -1,11 +1,13 @@
 import EditorView from './pages/EditorView'
-import Icons from "./components/Icons.tsx";
+import CommonIcons from "./components/Icons/CommonIcons.tsx";
 import EditorPanel from "./pages/EditorPanel.tsx";
+import GeometriesIcons from "./components/Icons/GeometriesIcons.tsx";
 
 function App() {
     return (
         <>
-            <Icons/>
+            <CommonIcons/>
+            <GeometriesIcons/>
             <main className={'w-screen h-screen flex'}>
                 <EditorView/>
                 <EditorPanel/>

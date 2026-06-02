@@ -1,4 +1,4 @@
-export default function Icons() {
+export default function CommonIcons() {
     return (
         <svg style={{display: 'none'}}>
             <symbol id={'translate'} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor">
@@ -22,16 +22,6 @@ export default function Icons() {
             <symbol id={'folder'} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="currentColor">
                 <path
                     d="M864 235.2H577.6L492.8 160c-11.2-12.8-35.2-32-72-32H160C105.6 128 64 169.6 64 224v576c0 52.8 43.2 96 96 96h704c52.8 0 96-43.2 96-96V332.8c0-54.4-41.6-97.6-96-97.6zM896 800c0 20.8-19.2 32-32 32h-704a32.064 32.064 0 0 1-32-32v-576c0-17.6 14.4-32 32-32v1.6h262.4c12.8 0 20.8 6.4 25.6 11.2l107.2 94.4H864c16 0 32 11.2 32 33.6v467.2z"></path>
-            </symbol>
-            <symbol id={'boxGeometry'} viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
-                <path
-                    d="M477.404 73.361a69.873 69.873 0 0 1 69.873 0l327.468 189.064a69.873 69.873 0 0 1 34.936 60.512v378.126a69.873 69.873 0 0 1-34.936 60.512L547.277 950.64a69.873 69.873 0 0 1-69.873 0L149.937 761.575A69.873 69.873 0 0 1 115 701.063V322.937a69.873 69.873 0 0 1 34.937-60.512zM174.891 351.862v349.201a9.982 9.982 0 0 0 4.991 8.645L483.393 884.94V530.423L174.891 351.862z m674.898 0.003L543.284 528.826v354.961l301.515-174.08a9.982 9.982 0 0 0 4.986-8.32l0.005-0.324-0.001-349.198zM517.332 125.229a9.982 9.982 0 0 0-9.982 0L204.74 299.94l307.216 177.816 307.984-177.815z"
-                ></path>
-            </symbol>
-            <symbol id={'sphereGeometry'} viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"
-                    fill="currentColor">
-                <path
-                    d="M62 512c0 248.528 201.472 450 450 450s450-201.472 450-450c0-248.528-201.472-450-450-450-248.528 0-450 201.472-450 450z"></path>
             </symbol>
             <symbol id={'delete'} viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
                 <path
