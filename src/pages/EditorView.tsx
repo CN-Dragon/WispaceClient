@@ -7,8 +7,29 @@ import {jsonrepair} from "jsonrepair";
 
 const ICON_CLASS = 'w-8 h-8 rounded cursor-pointer text-[#555] hover:text-black hover:scale-110';
 
-const geometryList = ['Box', 'Capsule', 'Circle', 'Cone', 'Cylinder', 'Dodecahedron',
-    'Extrude', 'Icosahedron', 'Lathe', 'Octahedron', 'Plane','Ring','Shape','Sphere']
+const geometryList = ['Box', 'Capsule', 'Circle', 'Cone', 'Cylinder', 'Dodecahedron', 'Extrude', 'Icosahedron',
+    'Lathe', 'Octahedron', 'Plane', 'Ring', 'Shape', 'Sphere', 'Tetrahedron', 'Torus', 'TorusKnot', 'Tube']
+
+const geometryNames: Record<Geometries, string> = {
+    Box: '立方体',
+    Capsule: '胶囊体',
+    Circle: '圆面',
+    Cone: '圆锥',
+    Cylinder: '圆柱',
+    Dodecahedron: '十二面体',
+    Extrude: '拉伸体',
+    Icosahedron: '二十面体',
+    Lathe: '车削体',
+    Octahedron: '八面体',
+    Plane: '平面',
+    Ring: '圆环',
+    Shape: '心形',
+    Sphere: '球体',
+    Tetrahedron: '四面体',
+    Torus: '圆环结',
+    TorusKnot: '环面结',
+    Tube: '管道'
+};
 
 type Mode = 'scale' | 'translate' | 'rotate';
 type Geometries = typeof geometryList[number];
@@ -167,6 +188,7 @@ function GeometriesBox({addObject}: { addObject: (value: Geometries) => void }) 
                     className={ICON_CLASS}
                     onClick={() => addObject(geom)}
                 >
+                    <title>{geometryNames[geom]}</title>
                     <use xlinkHref={'#' + geom}/>
                 </svg>
             ))}
