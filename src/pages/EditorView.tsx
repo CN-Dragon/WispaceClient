@@ -1,14 +1,17 @@
-import React, {useRef, useState} from 'react';
+import {useState} from 'react';
 import {Canvas} from '@react-three/fiber';
 import {OrbitControls, Grid, TransformControls, GizmoHelper, GizmoViewport} from '@react-three/drei';
 import {Mesh} from 'three';
 import {OpenAI} from "openai";
 import {jsonrepair} from "jsonrepair";
+import {Button, Input, Select, Space, Spin, message} from 'antd';
+import TextArea from "antd/es/input/TextArea";
+import {useCommonStore} from "../store/commonStore.ts";
 
 const ICON_CLASS = 'w-8 h-8 rounded cursor-pointer text-[#555] hover:text-black hover:scale-110';
 
-const geometryList = ['Box', 'Capsule', 'Circle', 'Cone', 'Cylinder', 'Dodecahedron', 'Extrude', 'Icosahedron',
-    'Lathe', 'Octahedron', 'Plane', 'Ring', 'Shape', 'Sphere', 'Tetrahedron', 'Torus', 'TorusKnot', 'Tube']
+const geometryList = ['Box', 'Sphere', 'Cylinder', 'Plane', 'Cone', 'Torus', 'Ring', 'Capsule', 'Tube',
+    'Circle', 'TorusKnot', 'Icosahedron', 'Dodecahedron', 'Octahedron', 'Tetrahedron', 'Lathe', 'Extrude', 'Shape']
 
 const geometryNames: Record<Geometries, string> = {
     Box: '立方体',
@@ -31,14 +34,9 @@ const geometryNames: Record<Geometries, string> = {
     Tube: '管道'
 };
 
+
 type Mode = 'scale' | 'translate' | 'rotate';
 type Geometries = typeof geometryList[number];
-
-const openai = new OpenAI({
-    baseURL: 'https://api.deepseek.com',
-    apiKey: 'sk-d8431c0fffb8401abe495b519a8e0f5b',
-    dangerouslyAllowBrowser: true
-});
 
 export default function EditorView() {
     // 选中实例物体
@@ -46,7 +44,7 @@ export default function EditorView() {
     // 几何体实例
     const [objects, setObjects] = useState<{
         id: string
-        type: Geometries
+        geometry: Geometries
         pos: [x: number, y: number, z: number]
         size: [width: number, height: number, depth: number]
         color: string
@@ -54,16 +52,21 @@ export default function EditorView() {
         metalness: number
     }[]>([]);
 
+    message.config({
+        top: 70
+    })
+
     // 模式：移动 / 旋转 / 拉伸
     const [mode, setMode] = useState<Mode>('translate');
     const [dragging, setDragging] = useState(false)
+    const [thinking, setThinking] = useState(false);
 
     // 添加几何体实例
     const addObject = (value: Geometries) => {
         setObjects([
             ...objects,
             {
-                id: Math.random().toString(36).slice(2), type: value, pos: [0, 0, 0],
+                id: Math.random().toString(36).slice(2), geometry: value, pos: [0, 0, 0],
                 size: [1, 1, 1], color: '#fff', roughness: 1, metalness: 1
             }
         ]);
@@ -78,10 +81,11 @@ export default function EditorView() {
 
 
     return (
-        <section className={'w-4/5 h-full relative'}>
+        <section className={'w-5/5 h-full relative'}>
+            <MessageBox thinking={thinking} setThinking={setThinking}/>
             <ModeBox mode={mode} setMode={setMode}/>
             <GeometriesBox addObject={addObject}/>
-            <DialogBox addObjects={addObjects}/>
+            <DialogBox addObjects={addObjects} thinking={thinking} setThinking={setThinking}/>
             <Canvas camera={{position: [0, 3, 5], fov: 80}} onPointerMissed={() => setSelected(null)}>
                 {/* 灰色背景 */}
                 <color attach="background" args={['rgb(170, 170, 170)']}/>
@@ -125,9 +129,9 @@ export default function EditorView() {
                               setSelected(e.object as Mesh);
                           }}>
                         {{
-                            box: <boxGeometry args={obj.size}/>,
-                            sphere: <sphereGeometry args={[0.7, 32, 32]}/>
-                        }[obj.type]}
+                            Box: <boxGeometry args={obj.size}/>,
+                            Sphere: <sphereGeometry args={[0.7, 32, 32]}/>
+                        }[obj.geometry]}
                         <meshStandardMaterial color={obj.color} roughness={obj.roughness} metalness={obj.metalness}/>
                     </mesh>
                 ))}
@@ -136,47 +140,139 @@ export default function EditorView() {
     );
 }
 
-function DialogBox({addObjects}: { addObjects: (values: any) => void }) {
-    const input = useRef<HTMLTextAreaElement>(null);
+function MessageBox({thinking, setThinking}: { thinking: boolean, setThinking: (value: boolean) => void }) {
+    return (
+        <>
+            {thinking && <div
+                className={'absolute left-1/2 -translate-x-1/2 z-1 top-20 bg-white p-2 rounded-xl flex items-center gap-2'}>
+                <Spin/>
+                <p>Ai建模中...</p>
+                <Button size={'small'} danger onClick={() => setThinking(false)}>取消</Button>
+            </div>
+            }
+        </>
+    )
+}
 
-    const handleKeyDown = async (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            if (input.current) {
-                const completion = await openai.chat.completions.create({
-                    messages: [
-                        {
-                            role: "system",
-                            content: "你是专业的3D建模师，精通 Three.js 的几何体、材质、网格以及物体结构和场景结构，请根据用户描述生成模型。\n" +
-                                "支持的类型: boxGeometry\n" +
-                                "输出格式为 JSON，示例：{result: [{type: 'boxGeometry', pos: [x,y,z], " +
-                                "size: [width,height,depth], color: '#fff', roughness: 1, metalness: 1},...]}"
-                        },
-                        {
-                            "role": "user",
-                            "content": input.current.value
-                        }],
-                    model: "deepseek-v4-flash",
-                });
+function DialogBox({addObjects, thinking, setThinking}: {
+    addObjects: (values: any) => void,
+    thinking: boolean,
+    setThinking: (value: boolean) => void
+}) {
+    const model = useCommonStore((state: any) => state.model);
+    const deepSeekKey = useCommonStore((state: any) => state.deepSeekKey);
+    const douBaoKey = useCommonStore((state: any) => state.douBaoKey);
+    const setModel = useCommonStore((state: any) => state.setModel);
+    const setDeepSeekKey = useCommonStore((state: any) => state.setDeepSeekKey);
+    const setDouBaoKey = useCommonStore((state: any) => state.setDouBaoKey);
+
+    const apiKey = model.startsWith('deepseek') ? deepSeekKey : douBaoKey;
+
+    const baseURL = model.startsWith('deepseek')
+        ? 'https://api.deepseek.com'
+        : 'https://ark.cn-beijing.volces.com/api/v3';
+
+    const openai = apiKey ? new OpenAI({
+        baseURL,
+        apiKey,
+        dangerouslyAllowBrowser: true
+    }) : null;
+
+    const [input, setInput] = useState('');
+
+    const handleKeyDown = () => {
+        if (!apiKey) return message.warning('请输入模型API Key')
+        if (input && !thinking) {
+            setThinking(true)
+            console.log(apiKey)
+            openai?.chat.completions.create({
+                messages: [
+                    {
+                        role: "system",
+                        content: "你是专业的3D建模师，精通 Three.js 的几何体、材质、网格以及物体结构和场景结构，请根据用户描述生成模型。\n" +
+                            "geometry支持Box\n" +
+                            "输出格式为 JSON，示例：{result: [{geometry: 'Box', pos: [x,y,z], " +
+                            "size: [width,height,depth], color: '#fff', roughness: 1, metalness: 1},...]}"
+                    },
+                    {
+                        "role": "user",
+                        "content": input
+                    }],
+                model: model,
+            }).then(completion => {
                 const content = completion.choices[0].message.content;
+                if (!content) return
                 const json = jsonrepair(content);
                 const result = JSON.parse(json).result;
-                console.log(result)
-                result.forEach((item) => {
+                result.forEach((item: any) => {
                     item.id = Math.random().toString(36).slice(2);
                 });
                 addObjects(result)
                 // input.current.value = ''
-            }
+            }).catch(err => {
+                message.error(err.toString())
+            }).finally(() => {
+                setThinking(false);
+            });
         }
     };
 
     return (
-        <textarea
-            ref={input}
-            onKeyDown={handleKeyDown}
-            className={'bg-white rounded-lg focus:outline-none absolute w-150 min-h-20 p-2 z-1 bottom-10 left-1/2 -translate-x-1/2'}
-            style={{resize: 'none'}} placeholder={'发送消息进行Ai建模...'}/>
+        <div className={'absolute w-150 z-1 bottom-5 left-1/2 -translate-x-1/2'}>
+            <Space.Compact style={{width: '100%'}}>
+                <Select
+                    style={{width: 230, textAlign: 'center'}}
+                    value={model}
+                    onChange={setModel}
+                    options={[
+                        {value: 'doubao-seed-2-0-pro', label: 'doubao seed 2.0 pro'},
+                        {value: 'doubao-seed-2-0-lite', label: 'doubao seed 2.0 lite'},
+                        {value: 'doubao-seed-2-0-mini', label: 'doubao seed 2.0 mini'},
+                        {value: 'deepseek-v4-flash', label: 'deepseek v4 flash'},
+                        {value: 'deepseek-v4-pro', label: 'deepseek v4 pro'},
+                    ]}
+                />
+                <Input.Password
+                    placeholder="api key"
+                    allowClear
+                    value={apiKey}
+                    onChange={(e) => {
+                        if (model.startsWith('deepseek'))
+                            setDeepSeekKey(e.target.value);
+                        else setDouBaoKey(e.target.value);
+                    }}
+                />
+            </Space.Compact>
+            <div className={'rounded-lg bg-white p-2 mt-2'}>
+                <TextArea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    style={{border: 'none', boxShadow: 'none'}}
+                    placeholder="发送消息进行Ai建模..."
+                    onPressEnter={(e) => {
+                        e.preventDefault();
+                        handleKeyDown()
+                    }}
+                    autoSize={{minRows: 3, maxRows: 5}}
+                />
+                <div className={'flex justify-between mt-2'}>
+                    <Space.Compact>
+                        <Space.Addon>模型精度</Space.Addon>
+                        <Select defaultValue="low"
+                                options={[{value: 'low', label: '低'},
+                                    {value: 'medium', label: '中'},
+                                    {value: 'high', label: '高'}]}/>
+                    </Space.Compact>
+                    <div className={'flex gap-4'}>
+                        <svg width={32} height={32} className={'cursor-pointer'}>
+                            <title>图片生成模型</title>
+                            <use xlinkHref={'#picture'}/>
+                        </svg>
+                        <Button type={'primary'} loading={thinking} onClick={handleKeyDown}>发送 (Enter)</Button>
+                    </div>
+                </div>
+            </div>
+        </div>
     )
 }
 
