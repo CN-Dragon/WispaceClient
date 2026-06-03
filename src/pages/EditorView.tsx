@@ -10,8 +10,8 @@ import {useCommonStore} from "../store/commonStore.ts";
 
 const ICON_CLASS = 'w-8 h-8 rounded cursor-pointer text-[#555] hover:text-black hover:scale-110';
 
-const geometryList = ['Box', 'Sphere', 'Cylinder', 'Plane', 'Cone', 'Torus', 'Ring', 'Capsule', 'Tube',
-    'Circle', 'TorusKnot', 'Icosahedron', 'Dodecahedron', 'Octahedron', 'Tetrahedron', 'Lathe', 'Extrude', 'Shape']
+const geometryList = ['Box', 'Sphere', 'Cylinder', 'Plane', 'Cone', 'Torus', 'Ring', 'Capsule',
+    'Circle', 'TorusKnot', 'Icosahedron', 'Dodecahedron', 'Octahedron', 'Tetrahedron']
 
 const geometryNames: Record<Geometries, string> = {
     Box: '立方体',
@@ -20,18 +20,14 @@ const geometryNames: Record<Geometries, string> = {
     Cone: '圆锥',
     Cylinder: '圆柱',
     Dodecahedron: '十二面体',
-    Extrude: '拉伸体',
     Icosahedron: '二十面体',
-    Lathe: '车削体',
     Octahedron: '八面体',
     Plane: '平面',
     Ring: '圆环',
-    Shape: '心形',
     Sphere: '球体',
     Tetrahedron: '四面体',
     Torus: '圆环结',
     TorusKnot: '环面结',
-    Tube: '管道'
 };
 
 
@@ -130,7 +126,19 @@ export default function EditorView() {
                           }}>
                         {{
                             Box: <boxGeometry args={obj.size}/>,
-                            Sphere: <sphereGeometry args={[0.7, 32, 32]}/>
+                            Sphere: <sphereGeometry args={[1, 32, 16]}/>,
+                            Cylinder: <cylinderGeometry args={[1, 1, 2]}/>,
+                            Plane: <planeGeometry args={[1, 1]}/>,
+                            Cone: <coneGeometry args={[1, 2]}/>,
+                            Torus: <torusGeometry args={[1, 0.4, 12]}/>,//第二个没用
+                            Ring: <ringGeometry args={[1, 2, 8]}/>,
+                            Capsule: <capsuleGeometry args={[1, 1, 10, 20]}/>,
+                            Circle: <circleGeometry args={[1, 32]}/>,
+                            TorusKnot: <torusKnotGeometry args={[1, 0.3, 64, 8, 2, 3]}/>,
+                            Icosahedron: <icosahedronGeometry args={[1, 0]}/>,
+                            Dodecahedron: <dodecahedronGeometry args={[1, 0]}/>,
+                            Octahedron: <octahedronGeometry args={[1, 0]}/>,
+                            Tetrahedron: <tetrahedronGeometry args={[1, 0]}/>,
                         }[obj.geometry]}
                         <meshStandardMaterial color={obj.color} roughness={obj.roughness} metalness={obj.metalness}/>
                     </mesh>
