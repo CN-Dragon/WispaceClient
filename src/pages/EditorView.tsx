@@ -42,7 +42,7 @@ export default function EditorView() {
         id: string
         geometry: Geometries
         pos: [x: number, y: number, z: number]
-        size: [width: number, height: number, depth: number]
+        args: number[]
         color: string
         roughness: number
         metalness: number
@@ -57,13 +57,30 @@ export default function EditorView() {
     const [dragging, setDragging] = useState(false)
     const [thinking, setThinking] = useState(false);
 
+    const argsMap: Record<string, number[]> = {
+        Box: [1, 1, 1],
+        Sphere: [1, 32, 16],
+        Cylinder: [1, 1, 2],
+        Plane: [1, 1],
+        Cone: [1, 2],
+        Torus: [1, 0.4, 12],
+        Ring: [1, 2, 8],
+        Capsule: [1, 1, 10, 20],
+        Circle: [1, 32],
+        TorusKnot: [1, 0.3, 64, 8, 2, 3],
+        Icosahedron: [1, 0],
+        Dodecahedron: [1, 0],
+        Octahedron: [1, 0],
+        Tetrahedron: [1, 0]
+    };
+
     // 添加几何体实例
     const addObject = (value: Geometries) => {
         setObjects([
             ...objects,
             {
                 id: Math.random().toString(36).slice(2), geometry: value, pos: [0, 0, 0],
-                size: [1, 1, 1], color: '#fff', roughness: 1, metalness: 1
+                args: argsMap[value], color: '#fff', roughness: 1, metalness: 1
             }
         ]);
     };
@@ -125,20 +142,20 @@ export default function EditorView() {
                               setSelected(e.object as Mesh);
                           }}>
                         {{
-                            Box: <boxGeometry args={obj.size}/>,
-                            Sphere: <sphereGeometry args={[1, 32, 16]}/>,
-                            Cylinder: <cylinderGeometry args={[1, 1, 2]}/>,
-                            Plane: <planeGeometry args={[1, 1]}/>,
-                            Cone: <coneGeometry args={[1, 2]}/>,
-                            Torus: <torusGeometry args={[1, 0.4, 12]}/>,//第二个没用
-                            Ring: <ringGeometry args={[1, 2, 8]}/>,
-                            Capsule: <capsuleGeometry args={[1, 1, 10, 20]}/>,
-                            Circle: <circleGeometry args={[1, 32]}/>,
-                            TorusKnot: <torusKnotGeometry args={[1, 0.3, 64, 8, 2, 3]}/>,
-                            Icosahedron: <icosahedronGeometry args={[1, 0]}/>,
-                            Dodecahedron: <dodecahedronGeometry args={[1, 0]}/>,
-                            Octahedron: <octahedronGeometry args={[1, 0]}/>,
-                            Tetrahedron: <tetrahedronGeometry args={[1, 0]}/>,
+                            Box: <boxGeometry args={obj.args as any}/>,
+                            Sphere: <sphereGeometry args={obj.args as any}/>,
+                            Cylinder: <cylinderGeometry args={obj.args as any}/>,
+                            Plane: <planeGeometry args={obj.args as any}/>,
+                            Cone: <coneGeometry args={obj.args as any}/>,
+                            Torus: <torusGeometry args={obj.args as any}/>,
+                            Ring: <ringGeometry args={obj.args as any}/>,
+                            Capsule: <capsuleGeometry args={obj.args as any}/>,
+                            Circle: <circleGeometry args={obj.args as any}/>,
+                            TorusKnot: <torusKnotGeometry args={obj.args as any}/>,
+                            Icosahedron: <icosahedronGeometry args={obj.args as any}/>,
+                            Dodecahedron: <dodecahedronGeometry args={obj.args as any}/>,
+                            Octahedron: <octahedronGeometry args={obj.args as any}/>,
+                            Tetrahedron: <tetrahedronGeometry args={obj.args as any}/>,
                         }[obj.geometry]}
                         <meshStandardMaterial color={obj.color} roughness={obj.roughness} metalness={obj.metalness}/>
                     </mesh>
@@ -192,15 +209,25 @@ function DialogBox({addObjects, thinking, setThinking}: {
         if (!apiKey) return message.warning('请输入模型API Key')
         if (input && !thinking) {
             setThinking(true)
-            console.log(apiKey)
             openai?.chat.completions.create({
                 messages: [
                     {
                         role: "system",
                         content: "你是专业的3D建模师，精通 Three.js 的几何体、材质、网格以及物体结构和场景结构，请根据用户描述生成模型。\n" +
-                            "geometry支持Box\n" +
+                            "支持的几何体geometry以及参数args如下:\n" +
+                            "- Box: [width, height, depth]\n" +
+                            "- Sphere: [radius, widthSegments,heightSegments]\n" +
+                            "- Cylinder: [radiusTop, radiusBottom, height]\n" +
+                            "- Plane: [width, height]\n" +
+                            "- Cone: [radius, height]\n" +
+                            "- Torus: [radius, tube, radialSegments]\n" +
+                            "- Ring: [innerRadius, outerRadius, thetaSegments]\n" +
+                            "- Capsule: [radius, height, capSegments, radialSegments]\n" +
+                            "- Circle: [radius, segments]\n" +
+                            "- TorusKnot: [radius, tube, tubularSegments, radialSegments, p, q]\n" +
+                            "- Icosahedron / Dodecahedron / Octahedron / Tetrahedron: [radius, detail]" +
                             "输出格式为 JSON，示例：{result: [{geometry: 'Box', pos: [x,y,z], " +
-                            "size: [width,height,depth], color: '#fff', roughness: 1, metalness: 1},...]}"
+                            "args: [width,height,depth], color: '#fff', roughness: 1, metalness: 1},...]}"
                     },
                     {
                         "role": "user",
