@@ -41,7 +41,8 @@ export default function EditorView() {
     const [objects, setObjects] = useState<{
         id: string
         geometry: Geometries
-        pos: [x: number, y: number, z: number]
+        position: [x: number, y: number, z: number]
+        rotation: [x: number, y: number, z: number]
         args: number[]
         color: string
         roughness: number
@@ -80,14 +81,15 @@ export default function EditorView() {
         setObjects([
             ...objects,
             {
-                id: Math.random().toString(36).slice(2), geometry: value, pos: [0, 0, 0],
-                args: argsMap[value], color: '#fff', roughness: 1, metalness: 1
+                id: Math.random().toString(36).slice(2), geometry: value, position: [0, 0, 0],
+                rotation: [0, 0, 0], args: argsMap[value], color: '#fff', roughness: 1, metalness: 1
             }
         ]);
     };
 
     const addObjects = (values: any) => {
         values.id = Math.random().toString(36).slice(2);
+        values.position[1] += 0.1
         setObjects(prev => [...prev, values]);
     };
 
@@ -135,7 +137,7 @@ export default function EditorView() {
 
                 {/* 遍历生成几何体 */}
                 {objects.map((obj) => (
-                    <mesh key={obj.id} position={obj.pos}
+                    <mesh key={obj.id} position={obj.position} rotation={obj.rotation}
                           onClick={(e) => {
                               if (dragging) return
                               e.stopPropagation();
@@ -157,7 +159,8 @@ export default function EditorView() {
                             Octahedron: <octahedronGeometry args={obj.args as any}/>,
                             Tetrahedron: <tetrahedronGeometry args={obj.args as any}/>,
                         }[obj.geometry]}
-                        <meshStandardMaterial color={obj.color} roughness={obj.roughness} metalness={obj.metalness}/>
+                        <meshStandardMaterial side={2} color={obj.color} roughness={obj.roughness}
+                                              metalness={obj.metalness}/>
                     </mesh>
                 ))}
             </Canvas>
@@ -224,8 +227,11 @@ function DialogBox({addObjects, thinking, setThinking, building, setBuilding}: {
                     messages: [
                         {
                             role: "system",
-                            content: "你是专业的3D建模师，精通 Three.js 的几何体、材质、网格以及物体结构和场景结构，请根据用户描述生成模型。\n" +
-                                "支持的几何体geometry以及参数args如下:\n" +
+                            content: "你是专业的3D建模师，精通 Three.js 的几何体、材质、网格以及物体结构和场景结构。请根据用户的自然语言描述，生成一个符合物理常识、无穿模、无悬浮的 Three.js 场景模型，输出为严格的 JSON 格式。\n" +
+                                "## 规则\n" +
+                                "1. 使用Plane和Circle创建地面时角度旋转(x=Math.PI / 2)。\n" +
+                                "2. 严格控制位置距离，避免模型之间出现悬浮或穿模现象。" +
+                                "## 支持的几何体geometry以及参数args\n" +
                                 "- Box: [width, height, depth]\n" +
                                 "- Sphere: [radius, widthSegments,heightSegments]\n" +
                                 "- Cylinder: [radiusTop, radiusBottom, height]\n" +
@@ -237,7 +243,7 @@ function DialogBox({addObjects, thinking, setThinking, building, setBuilding}: {
                                 "- Circle: [radius, segments]\n" +
                                 "- TorusKnot: [radius, tube, tubularSegments, radialSegments, p, q]\n" +
                                 "- Icosahedron / Dodecahedron / Octahedron / Tetrahedron: [radius, detail]" +
-                                "输出格式为 JSON，示例：{result: [{geometry: 'Box', pos: [x,y,z], " +
+                                "输出格式为 JSON，示例：{result: [{geometry: 'Box', position: [x,y,z], rotation: [x,y,z]," +
                                 "args: [width,height,depth], color: '#fff', roughness: 1, metalness: 1},...]}"
                         },
                         {
@@ -256,16 +262,19 @@ function DialogBox({addObjects, thinking, setThinking, building, setBuilding}: {
                         if (fullContent.includes('result')) fullContent = ''
                         const match = fullContent.match(/\{.*?}/s);
                         if (match) {
+                            const check = jsonrepair(match[0]);
+                            const json = JSON.parse(check);
+                            console.log(json)
                             fullContent = ''
-                            addObjects(JSON.parse(match[0]))
+                            addObjects(json)
                         }
                     }
                 }
             } catch (err) {
                 message.error(err.toString())
             } finally {
-                setBuilding(false)
-                setThinking(false);
+                // setBuilding(false)
+                // setThinking(false);
             }
         }
     };
