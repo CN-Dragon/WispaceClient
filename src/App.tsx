@@ -1,6 +1,6 @@
 import EditorView from './pages/EditorView'
 import CommonIcons from "./components/Icons/CommonIcons.tsx";
-import EditorPanel from "./pages/EditorPanel.tsx";
+// import EditorPanel from "./pages/EditorPanel.tsx";
 import GeometriesIcons from "./components/Icons/GeometriesIcons.tsx";
 
 function App() {
