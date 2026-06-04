@@ -56,6 +56,7 @@ export default function EditorView() {
     const [mode, setMode] = useState<Mode>('translate');
     const [dragging, setDragging] = useState(false)
     const [thinking, setThinking] = useState(false);
+    const [building, setBuilding] = useState(false);
 
     const argsMap: Record<string, number[]> = {
         Box: [1, 1, 1],
@@ -86,19 +87,18 @@ export default function EditorView() {
     };
 
     const addObjects = (values: any) => {
-        setObjects([
-            ...objects,
-            ...values
-        ]);
+        values.id = Math.random().toString(36).slice(2);
+        setObjects(prev => [...prev, values]);
     };
 
 
     return (
         <section className={'w-5/5 h-full relative'}>
-            <MessageBox thinking={thinking} setThinking={setThinking}/>
+            <MessageBox thinking={thinking} setThinking={setThinking} building={building} setBuilding={setBuilding}/>
             <ModeBox mode={mode} setMode={setMode}/>
             <GeometriesBox addObject={addObject}/>
-            <DialogBox addObjects={addObjects} thinking={thinking} setThinking={setThinking}/>
+            <DialogBox addObjects={addObjects} thinking={thinking} setThinking={setThinking} building={building}
+                       setBuilding={setBuilding}/>
             <Canvas camera={{position: [0, 3, 5], fov: 80}} onPointerMissed={() => setSelected(null)}>
                 {/* 灰色背景 */}
                 <color attach="background" args={['rgb(170, 170, 170)']}/>
@@ -165,24 +165,34 @@ export default function EditorView() {
     );
 }
 
-function MessageBox({thinking, setThinking}: { thinking: boolean, setThinking: (value: boolean) => void }) {
+function MessageBox({thinking, setThinking, building, setBuilding}: {
+    thinking: boolean,
+    setThinking: (value: boolean) => void,
+    building: boolean,
+    setBuilding: (value: boolean) => void
+}) {
     return (
         <>
             {thinking && <div
                 className={'absolute left-1/2 -translate-x-1/2 z-1 top-20 bg-white p-2 rounded-xl flex items-center gap-2'}>
                 <Spin/>
-                <p>Ai建模中...</p>
-                <Button size={'small'} danger onClick={() => setThinking(false)}>取消</Button>
+                {building ? <p>Ai建模中...</p> : <p>Ai思考中...</p>}
+                <Button size={'small'} danger onClick={() => {
+                    setThinking(false)
+                    setBuilding(false)
+                }}>取消</Button>
             </div>
             }
         </>
     )
 }
 
-function DialogBox({addObjects, thinking, setThinking}: {
+function DialogBox({addObjects, thinking, setThinking, building, setBuilding}: {
     addObjects: (values: any) => void,
     thinking: boolean,
-    setThinking: (value: boolean) => void
+    setThinking: (value: boolean) => void,
+    building: boolean,
+    setBuilding: (value: boolean) => void
 }) {
     const model = useCommonStore((state: any) => state.model);
     const deepSeekKey = useCommonStore((state: any) => state.deepSeekKey);
@@ -205,50 +215,58 @@ function DialogBox({addObjects, thinking, setThinking}: {
 
     const [input, setInput] = useState('');
 
-    const handleKeyDown = () => {
-        if (!apiKey) return message.warning('请输入模型API Key')
+    const handleKeyDown = async () => {
+        if (!openai) return message.warning('请输入模型API Key')
         if (input && !thinking) {
             setThinking(true)
-            openai?.chat.completions.create({
-                messages: [
-                    {
-                        role: "system",
-                        content: "你是专业的3D建模师，精通 Three.js 的几何体、材质、网格以及物体结构和场景结构，请根据用户描述生成模型。\n" +
-                            "支持的几何体geometry以及参数args如下:\n" +
-                            "- Box: [width, height, depth]\n" +
-                            "- Sphere: [radius, widthSegments,heightSegments]\n" +
-                            "- Cylinder: [radiusTop, radiusBottom, height]\n" +
-                            "- Plane: [width, height]\n" +
-                            "- Cone: [radius, height]\n" +
-                            "- Torus: [radius, tube, radialSegments]\n" +
-                            "- Ring: [innerRadius, outerRadius, thetaSegments]\n" +
-                            "- Capsule: [radius, height, capSegments, radialSegments]\n" +
-                            "- Circle: [radius, segments]\n" +
-                            "- TorusKnot: [radius, tube, tubularSegments, radialSegments, p, q]\n" +
-                            "- Icosahedron / Dodecahedron / Octahedron / Tetrahedron: [radius, detail]" +
-                            "输出格式为 JSON，示例：{result: [{geometry: 'Box', pos: [x,y,z], " +
-                            "args: [width,height,depth], color: '#fff', roughness: 1, metalness: 1},...]}"
-                    },
-                    {
-                        "role": "user",
-                        "content": input
-                    }],
-                model: model,
-            }).then(completion => {
-                const content = completion.choices[0].message.content;
-                if (!content) return
-                const json = jsonrepair(content);
-                const result = JSON.parse(json).result;
-                result.forEach((item: any) => {
-                    item.id = Math.random().toString(36).slice(2);
-                });
-                addObjects(result)
-                // input.current.value = ''
-            }).catch(err => {
+            try {
+                const stream = await openai.chat.completions.create({
+                    messages: [
+                        {
+                            role: "system",
+                            content: "你是专业的3D建模师，精通 Three.js 的几何体、材质、网格以及物体结构和场景结构，请根据用户描述生成模型。\n" +
+                                "支持的几何体geometry以及参数args如下:\n" +
+                                "- Box: [width, height, depth]\n" +
+                                "- Sphere: [radius, widthSegments,heightSegments]\n" +
+                                "- Cylinder: [radiusTop, radiusBottom, height]\n" +
+                                "- Plane: [width, height]\n" +
+                                "- Cone: [radius, height]\n" +
+                                "- Torus: [radius, tube, radialSegments]\n" +
+                                "- Ring: [innerRadius, outerRadius, thetaSegments]\n" +
+                                "- Capsule: [radius, height, capSegments, radialSegments]\n" +
+                                "- Circle: [radius, segments]\n" +
+                                "- TorusKnot: [radius, tube, tubularSegments, radialSegments, p, q]\n" +
+                                "- Icosahedron / Dodecahedron / Octahedron / Tetrahedron: [radius, detail]" +
+                                "输出格式为 JSON，示例：{result: [{geometry: 'Box', pos: [x,y,z], " +
+                                "args: [width,height,depth], color: '#fff', roughness: 1, metalness: 1},...]}"
+                        },
+                        {
+                            "role": "user",
+                            "content": input
+                        }],
+                    model: model,
+                    stream: true
+                })
+                let fullContent = '';
+                for await (const chunk of stream) {
+                    const content = chunk.choices[0]?.delta?.content;
+                    if (content) {
+                        if (!building) setBuilding(true)
+                        fullContent += content;
+                        if (fullContent.includes('result')) fullContent = ''
+                        const match = fullContent.match(/\{.*?}/s);
+                        if (match) {
+                            fullContent = ''
+                            addObjects(JSON.parse(match[0]))
+                        }
+                    }
+                }
+            } catch (err) {
                 message.error(err.toString())
-            }).finally(() => {
+            } finally {
+                setBuilding(false)
                 setThinking(false);
-            });
+            }
         }
     };
 
@@ -291,13 +309,16 @@ function DialogBox({addObjects, thinking, setThinking}: {
                     autoSize={{minRows: 3, maxRows: 5}}
                 />
                 <div className={'flex justify-between mt-2'}>
-                    <Space.Compact>
-                        <Space.Addon>模型精度</Space.Addon>
-                        <Select defaultValue="low"
-                                options={[{value: 'low', label: '低'},
-                                    {value: 'medium', label: '中'},
-                                    {value: 'high', label: '高'}]}/>
-                    </Space.Compact>
+                    <div className={'flex gap-2'}>
+                        <Space.Compact>
+                            <Space.Addon>模型精度</Space.Addon>
+                            <Select defaultValue="low"
+                                    options={[{value: 'low', label: '低'},
+                                        {value: 'medium', label: '中'},
+                                        {value: 'high', label: '高'}]}/>
+                        </Space.Compact>
+                        <Button>提示词优化</Button>
+                    </div>
                     <div className={'flex gap-4'}>
                         <svg width={32} height={32} className={'cursor-pointer'}>
                             <title>图片生成模型</title>

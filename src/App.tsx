@@ -10,7 +10,7 @@ function App() {
             <GeometriesIcons/>
             <main className={'w-screen h-screen flex'}>
                 <EditorView/>
-                <EditorPanel/>
+                {/*<EditorPanel/>*/}
             </main>
         </>
     )
