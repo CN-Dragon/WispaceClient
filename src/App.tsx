@@ -1,7 +1,7 @@
 import EditorView from './pages/EditorView'
-import CommonIcons from "./components/Icons/CommonIcons.tsx";
-// import EditorPanel from "./pages/EditorPanel.tsx";
-import GeometriesIcons from "./components/Icons/GeometriesIcons.tsx";
+import CommonIcons from "./components/icons/CommonIcons.tsx";
+import EditorPanel from "./pages/EditorPanel.tsx";
+import GeometriesIcons from "./components/icons/GeometriesIcons.tsx";
 
 function App() {
     return (
@@ -10,7 +10,7 @@ function App() {
             <GeometriesIcons/>
             <main className={'w-screen h-screen flex'}>
                 <EditorView/>
-                {/*<EditorPanel/>*/}
+                <EditorPanel/>
             </main>
         </>
     )
