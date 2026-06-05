@@ -1,14 +1,15 @@
-import {GizmoHelper, GizmoViewport, Grid, OrbitControls, TransformControls} from "@react-three/drei";
-import {Mesh} from "three";
+import {GizmoHelper, GizmoViewport, Grid, OrbitControls, TransformControls, useHelper} from "@react-three/drei";
 import {Canvas} from "@react-three/fiber";
 import {useState} from "react";
 import type {GeometriesObject, Mode} from "../../types/common.ts";
+import {Box3, Object3D} from "three";
 
 export default function ViewBox({mode, objects}: { mode: Mode, objects: GeometriesObject[] }) {
-    const [selected, setSelected] = useState<Mesh | null>(null);
+    const [selected, setSelected] = useState<Object3D | null>(null);
 
     const [dragging, setDragging] = useState(false)
 
+    const box = new Box3();
     return (
         <Canvas camera={{position: [0, 3, 5], fov: 80}} onPointerMissed={() => setSelected(null)}>
             {/* 灰色背景 */}
@@ -37,23 +38,45 @@ export default function ViewBox({mode, objects}: { mode: Mode, objects: Geometri
             <OrbitControls makeDefault/>
 
             {/* 实例控制器 */}
-            {selected && <TransformControls
-                object={selected}
-                mode={mode}
-                onMouseDown={() => setDragging(true)}
-                onMouseUp={() => setDragging(false)}
-            />}
+            {selected && (
+                <>
+                    <TransformControls
+                        object={selected}
+                        mode={mode}
+                        onMouseDown={() => setDragging(true)}
+                        onMouseUp={() => setDragging(false)}
+                        onChange={() => box.setFromObject(selected)}
+                    />
+                    <box3Helper args={[box, 0xffff00]}/>
+                </>
+            )}
+
+            <group
+                onClick={(e) => {
+                    // e.stopPropagation()
+                    setSelected(e.eventObject)
+                }}
+            >
+                <mesh position={[0, 0, 0]}>
+                    <boxGeometry args={[1, 1, 1]}/>
+                    <meshStandardMaterial/>
+                </mesh>
+                <mesh position={[1, 1, 1]}>
+                    <boxGeometry args={[1, 1, 1]}/>
+                    <meshStandardMaterial/>
+                </mesh>
+            </group>
 
             {/* 遍历生成几何体 */}
             {objects.map((obj) => (
-                <mesh key={obj.id} position={obj.position} rotation={obj.rotation}
-                      onClick={(e) => {
-                          if (dragging) return
-                          console.log(e.object)
-                          e.stopPropagation();
-                          setSelected(e.object as Mesh);
-                          // console.log(selected)
-                      }}>
+                <mesh
+                    key={obj.id} position={obj.position} rotation={obj.rotation}
+                    onClick={(e) => {
+                        if (dragging) return
+                        // console.log(e.eventObject)
+                        e.stopPropagation();
+                        setSelected(e.eventObject);
+                    }}>
                     {{
                         Box: <boxGeometry args={obj.args as any}/>,
                         Sphere: <sphereGeometry args={obj.args as any}/>,
