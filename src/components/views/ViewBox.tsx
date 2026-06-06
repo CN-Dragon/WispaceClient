@@ -11,8 +11,6 @@ export default function ViewBox({mode, objects, click}: {
 }) {
     const [selected, setSelected] = useState<Object3D | null>(null);
 
-    const [dragging, setDragging] = useState(false)
-
     const box = useMemo(() => new Box3(), []);
 
     useEffect(() => {
@@ -51,8 +49,6 @@ export default function ViewBox({mode, objects, click}: {
                     <TransformControls
                         object={selected}
                         mode={mode}
-                        onMouseDown={() => setDragging(true)}
-                        onMouseUp={() => setDragging(false)}
                         onObjectChange={() => box.setFromObject(selected)}
                     />
                     <box3Helper args={[box, 0xffff00]}/>
@@ -78,16 +74,16 @@ export default function ViewBox({mode, objects, click}: {
 
             {/* 遍历生成几何体 */}
             {objects.map((obj: GeometriesObject) => (
-                <Geometry key={obj.id} obj={obj} setSelected={setSelected} dragging={dragging} click={click}/>
+                <Geometry key={obj.id} obj={obj} selected={selected} setSelected={setSelected} click={click}/>
             ))}
         </Canvas>
     )
 }
 
-function Geometry({obj, setSelected, dragging, click}: {
+function Geometry({obj, selected, setSelected, click}: {
     obj: GeometriesObject,
-    setSelected: (value: Object3D) => void,
-    dragging: boolean,
+    selected: Object3D | null,
+    setSelected: (value: Object3D | null) => void,
     click: boolean
 }) {
     const meshRef = useRef(null);
@@ -102,8 +98,9 @@ function Geometry({obj, setSelected, dragging, click}: {
             position={obj.position} rotation={obj.rotation}
             scale={obj.scale}
             onClick={(e) => {
-                if (dragging) return
                 e.stopPropagation();
+                if (selected === e.eventObject) return setSelected(null);
+                if (e.delta > 2) return
                 setSelected(e.eventObject);
             }}
         >
