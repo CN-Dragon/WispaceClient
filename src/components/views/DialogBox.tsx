@@ -58,8 +58,9 @@ export function DialogBox({addObjects, thinking, setThinking, building, setBuild
                                 "- Circle: [radius, segments]\n" +
                                 "- TorusKnot: [radius, tube, tubularSegments, radialSegments, p, q]\n" +
                                 "- Icosahedron / Dodecahedron / Octahedron / Tetrahedron: [radius, detail]" +
-                                "输出格式为 JSON，示例：{result: [{geometry: 'Box', position: [x,y,z], rotation: [x,y,z]," +
-                                "args: [width,height,depth], color: '#fff', roughness: 1, metalness: 1},...]}"
+                                "输出格式为 JSON，示例：{result: [{geometry: 'Box', args: [width,height,depth]," +
+                                "position: [x,y,z], rotation: [x,y,z], scale:[x,y,z] color: '#fff', roughness: 1," +
+                                "metalness: 1},...]}"
                         },
                         {
                             "role": "user",

@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://cn-dragon.github.io/WispaceClient",
+  "homepage": "https://dizzyelk.github.io/WispaceClient",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
