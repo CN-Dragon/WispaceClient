@@ -1,6 +1,6 @@
 import {GizmoHelper, GizmoViewport, Grid, OrbitControls, TransformControls} from "@react-three/drei";
 import {Canvas} from "@react-three/fiber";
-import {useEffect, useMemo, useState} from "react";
+import {useEffect, useMemo, useRef, useState} from "react";
 import type {GeometriesObject, Mode} from "../../types/common.ts";
 import {Box3, Object3D} from "three";
 
@@ -77,39 +77,54 @@ export default function ViewBox({mode, objects, click}: {
             {/*</group>*/}
 
             {/* 遍历生成几何体 */}
-            {objects.map((obj) => (
-                <mesh
-                    ref={(e) => {
-                        if (click) setSelected(e);
-                    }}
-                    key={obj.id} position={obj.position} rotation={obj.rotation}
-                    scale={obj.scale}
-                    onClick={(e) => {
-                        if (dragging) return
-                        e.stopPropagation();
-                        setSelected(e.eventObject);
-                    }}
-                >
-                    {{
-                        Box: <boxGeometry args={obj.args as any}/>,
-                        Sphere: <sphereGeometry args={obj.args as any}/>,
-                        Cylinder: <cylinderGeometry args={obj.args as any}/>,
-                        Plane: <planeGeometry args={obj.args as any}/>,
-                        Cone: <coneGeometry args={obj.args as any}/>,
-                        Torus: <torusGeometry args={obj.args as any}/>,
-                        Ring: <ringGeometry args={obj.args as any}/>,
-                        Capsule: <capsuleGeometry args={obj.args as any}/>,
-                        Circle: <circleGeometry args={obj.args as any}/>,
-                        TorusKnot: <torusKnotGeometry args={obj.args as any}/>,
-                        Icosahedron: <icosahedronGeometry args={obj.args as any}/>,
-                        Dodecahedron: <dodecahedronGeometry args={obj.args as any}/>,
-                        Octahedron: <octahedronGeometry args={obj.args as any}/>,
-                        Tetrahedron: <tetrahedronGeometry args={obj.args as any}/>,
-                    }[obj.geometry]}
-                    <meshStandardMaterial side={2} color={obj.color} roughness={obj.roughness}
-                                          metalness={obj.metalness}/>
-                </mesh>
+            {objects.map((obj: GeometriesObject) => (
+                <Geometry key={obj.id} obj={obj} setSelected={setSelected} dragging={dragging} click={click}/>
             ))}
         </Canvas>
+    )
+}
+
+function Geometry({obj, setSelected, dragging, click}: {
+    obj: GeometriesObject,
+    setSelected: (value: Object3D) => void,
+    dragging: boolean,
+    click: boolean
+}) {
+    const meshRef = useRef(null);
+
+    useEffect(() => {
+        if (meshRef.current && click) setSelected(meshRef.current)
+    }, [setSelected, click]);
+
+    return (
+        <mesh
+            ref={meshRef}
+            position={obj.position} rotation={obj.rotation}
+            scale={obj.scale}
+            onClick={(e) => {
+                if (dragging) return
+                e.stopPropagation();
+                setSelected(e.eventObject);
+            }}
+        >
+            {{
+                Box: <boxGeometry args={obj.args as any}/>,
+                Sphere: <sphereGeometry args={obj.args as any}/>,
+                Cylinder: <cylinderGeometry args={obj.args as any}/>,
+                Plane: <planeGeometry args={obj.args as any}/>,
+                Cone: <coneGeometry args={obj.args as any}/>,
+                Torus: <torusGeometry args={obj.args as any}/>,
+                Ring: <ringGeometry args={obj.args as any}/>,
+                Capsule: <capsuleGeometry args={obj.args as any}/>,
+                Circle: <circleGeometry args={obj.args as any}/>,
+                TorusKnot: <torusKnotGeometry args={obj.args as any}/>,
+                Icosahedron: <icosahedronGeometry args={obj.args as any}/>,
+                Dodecahedron: <dodecahedronGeometry args={obj.args as any}/>,
+                Octahedron: <octahedronGeometry args={obj.args as any}/>,
+                Tetrahedron: <tetrahedronGeometry args={obj.args as any}/>,
+            }[obj.geometry]}
+            <meshStandardMaterial side={2} color={obj.color} roughness={obj.roughness}
+                                  metalness={obj.metalness}/>
+        </mesh>
     )
 }
