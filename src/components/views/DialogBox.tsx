@@ -1,7 +1,7 @@
 import {useCommonStore} from "../../store/commonStore.ts";
 import {OpenAI} from "openai";
 import {useState} from "react";
-import {Button, Input, message, Select, Space, Switch} from "antd";
+import {Button, Input, message, Select, Space} from "antd";
 import {jsonrepair} from "jsonrepair";
 import TextArea from "antd/es/input/TextArea";
 

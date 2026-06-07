@@ -1,75 +1,46 @@
-# React + TypeScript + Vite
+# WispaceClient 🌌
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+[English](./README.md) | [中文版](./README.zh-CN.md)
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+### 📖 Introduction
+Wispace is a modern, AI-powered 3D workspace and scene editor built with React and Three.js. It allows users to dynamically create, manage, and edit 3D geometries in a seamless interactive environment. With built-in AI capabilities, users can prompt the system to generate or manipulate objects within the 3D scene effortlessly.
 
-## React Compiler
+### ✨ Features
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+- **Interactive 3D Editor**: Drag, drop, and transform (translate, scale, rotate) various geometries like Boxes, Spheres, Cylinders, and more.
+- **AI-Powered Assistant**: Integrated with OpenAI to interpret natural language prompts for generating and modifying 3D objects in real-time.
+- **Scene Management**: A visual hierarchy tree (Scene Panel) to easily manage objects and groups in your workspace.
+- **Modern UI**: Clean and intuitive interface powered by Tailwind CSS and Ant Design.
 
-Note: This will impact Vite dev & build performances.
+### 🛠️ Tech Stack
+- **Framework**: React 19, TypeScript, Vite
+- **3D Engine**: Three.js, React Three Fiber, React Three Drei
+- **Styling & UI**: Tailwind CSS, Ant Design (antd)
+- **State Management**: Zustand
+- **Routing**: React Router DOM
+- **AI Integration**: OpenAI API
+- **Network**: Axios
 
-## Expanding the ESLint configuration
+### 🚀 Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+#### Prerequisites
+- Node.js (v18 or higher recommended)
+- npm or yarn or pnpm
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+#### Installation
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Run the development server:
+   ```bash
+   npm run dev
+   ```
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+#### Build for Production
+```bash
+npm run build
 ```
