@@ -1,6 +1,6 @@
 # WispaceClient 🌌
 
-[English](./README.md) | [中文版](./README.zh-CN.md)
+[English](README.md) | [中文版](README.zh-CN.md)
 
 ---
 
