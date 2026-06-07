@@ -90,7 +90,7 @@ function Object({obj, objects, selected, setSelected, click}: {
     return <GeometryObject obj={obj} objects={objects} selected={selected} setSelected={setSelected} click={click}/>
 }
 
-function GeometryObject({obj, objects, selected, setSelected, click}: {
+function GeometryObject({obj, selected, setSelected, click}: {
     obj: GeometryObject,
     objects: Array<GeometryObject | GroupObject>,
     selected: Object3D | null,

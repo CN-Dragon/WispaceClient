@@ -1,7 +1,7 @@
 import {useCommonStore} from "../../store/commonStore.ts";
 import {OpenAI} from "openai";
 import {useState} from "react";
-import {Button, Input, message, Select, Space} from "antd";
+import {Button, Input, message, Select, Space, Switch} from "antd";
 import {jsonrepair} from "jsonrepair";
 import TextArea from "antd/es/input/TextArea";
 
@@ -36,6 +36,7 @@ export function DialogBox({addObjects, thinking, setThinking, building, setBuild
 
     const sendMessage = async () => {
         if (!openai) return message.warning('请输入模型API Key')
+        if (input.length <= 50) await reviseMessage()
         if (input && !thinking) {
             setThinking(true)
             try {
@@ -45,8 +46,8 @@ export function DialogBox({addObjects, thinking, setThinking, building, setBuild
                             role: "system",
                             content: "你是专业的3D建模师，精通 Three.js 的几何体、材质、网格以及物体结构和场景结构。请根据用户的自然语言描述，生成一个符合物理常识，无穿模、无悬浮的 Three.js 场景模型，输出为严格的 JSON 格式。\n" +
                                 "## 规则\n" +
-                                "1. 使用Plane和Circle创建地面时角度旋转(x=Math.PI / 2)。\n" +
-                                "2. 严格控制位置距离，避免模型之间出现悬浮或穿模现象。" +
+                                "1. 根据物体需要设置 rotation（弧度），例如“地面”→ [Math.PI/2,0,0]，“轮子”→ [0,0,Math.PI/2]。\n" +
+                                "2. 严格控制位置距离，避免模型之间出现悬浮或穿模现象。\n" +
                                 "## 支持的几何体geometry以及参数args\n" +
                                 "- Box: [width, height, depth]\n" +
                                 "- Sphere: [radius, widthSegments,heightSegments]\n" +
@@ -109,7 +110,7 @@ export function DialogBox({addObjects, thinking, setThinking, building, setBuild
                     messages: [
                         {
                             role: "system",
-                            content: "你是一个专注于 3D建模 的提示词优化专家。请根据用户的自然语言描述进行补全与润色，输出一个更清晰、可执行、细节丰富的优化版提示词。输出格式：优化后的提示词（直接给出完整版本，不加额外解释）"
+                            content: "你是一个专注于 3D建模 的提示词优化专家。请根据用户的自然语言描述进行补全与润色，输出一个更清晰、可执行、细节丰富的优化版中文提示词。输出格式：优化后的提示词（直接给出完整版本，不加额外解释）"
                         },
                         {
                             "role": "user",
@@ -180,7 +181,7 @@ export function DialogBox({addObjects, thinking, setThinking, building, setBuild
                     autoSize={{minRows: 3, maxRows: 5}}
                 />
                 <div className={'flex justify-between mt-2'}>
-                    <div className={'flex gap-2'}>
+                    <div className={'flex gap-1'}>
                         {/*<Space.Compact>*/}
                         {/*    <Space.Addon>模型精度</Space.Addon>*/}
                         {/*    <Select defaultValue="low"*/}
@@ -189,6 +190,8 @@ export function DialogBox({addObjects, thinking, setThinking, building, setBuild
                         {/*                {value: 'high', label: '高'}]}/>*/}
                         {/*</Space.Compact>*/}
                         <Button loading={revise} disabled={thinking} onClick={reviseMessage}>提示词优化</Button>
+                        <p className={'border w-6 h-6 text-center self-center scale-75'} style={{borderRadius: 100}}
+                           title={'当提示词内容较少，自动进行优化。'}>?</p>
                     </div>
                     <div className={'flex gap-4'}>
                         {/*<svg width={32} height={32} className={'cursor-pointer'}>*/}
