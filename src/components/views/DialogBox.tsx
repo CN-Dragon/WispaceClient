@@ -19,6 +19,9 @@ export function DialogBox({addObjects, thinking, setThinking, building, setBuild
     const setDeepSeekKey = useCommonStore((state: any) => state.setDeepSeekKey);
     const setDouBaoKey = useCommonStore((state: any) => state.setDouBaoKey);
 
+    const [input, setInput] = useState('');
+    const [revise, setRevise] = useState(false);
+
     const apiKey = model.startsWith('deepseek') ? deepSeekKey : douBaoKey;
 
     const baseURL = model.startsWith('deepseek')
@@ -31,9 +34,7 @@ export function DialogBox({addObjects, thinking, setThinking, building, setBuild
         dangerouslyAllowBrowser: true
     }) : null;
 
-    const [input, setInput] = useState('');
-
-    const handleKeyDown = async () => {
+    const sendMessage = async () => {
         if (!openai) return message.warning('请输入模型API Key')
         if (input && !thinking) {
             setThinking(true)
@@ -99,6 +100,47 @@ export function DialogBox({addObjects, thinking, setThinking, building, setBuild
         }
     };
 
+    const reviseMessage = async () => {
+        if (!openai) return message.warning('请输入模型API Key')
+        if (input && !thinking) {
+            setRevise(true)
+            try {
+                const stream = await openai.chat.completions.create({
+                    messages: [
+                        {
+                            role: "system",
+                            content: "你是一个专注于 3D建模 的提示词优化专家。请根据用户的自然语言描述进行补全与润色，输出一个更清晰、可执行、细节丰富的优化版提示词。输出格式：优化后的提示词（直接给出完整版本，不加额外解释）"
+                        },
+                        {
+                            "role": "user",
+                            "content": input
+                        }],
+                    model: model,
+                    stream: true
+                })
+                let isFirstChunk = true;
+                for await (const chunk of stream) {
+                    const content = chunk.choices[0]?.delta?.content;
+                    if (content) {
+                        if (isFirstChunk) {
+                            setInput('');
+                            isFirstChunk = false;
+                        }
+                        setInput(prev => prev + content);
+                    }
+                }
+            } catch (err) {
+                if (err instanceof Error) {
+                    message.error(err.message);
+                } else {
+                    message.error(String(err));
+                }
+            } finally {
+                setRevise(false)
+            }
+        }
+    };
+
     return (
         <div className={'absolute w-150 z-1 bottom-5 left-1/2 -translate-x-1/2'}>
             <Space.Compact style={{width: '100%'}}>
@@ -133,7 +175,7 @@ export function DialogBox({addObjects, thinking, setThinking, building, setBuild
                     placeholder="发送消息进行Ai建模..."
                     onPressEnter={(e) => {
                         e.preventDefault();
-                        handleKeyDown()
+                        sendMessage()
                     }}
                     autoSize={{minRows: 3, maxRows: 5}}
                 />
@@ -146,14 +188,15 @@ export function DialogBox({addObjects, thinking, setThinking, building, setBuild
                         {/*                {value: 'medium', label: '中'},*/}
                         {/*                {value: 'high', label: '高'}]}/>*/}
                         {/*</Space.Compact>*/}
-                        <Button>提示词优化</Button>
+                        <Button loading={revise} disabled={thinking} onClick={reviseMessage}>提示词优化</Button>
                     </div>
                     <div className={'flex gap-4'}>
                         {/*<svg width={32} height={32} className={'cursor-pointer'}>*/}
                         {/*    <title>图片生成模型</title>*/}
                         {/*    <use xlinkHref={'#picture'}/>*/}
                         {/*</svg>*/}
-                        <Button type={'primary'} loading={thinking} onClick={handleKeyDown}>发送 (Enter)</Button>
+                        <Button type={'primary'} disabled={revise} loading={thinking} onClick={sendMessage}>发送
+                            (Enter)</Button>
                     </div>
                 </div>
             </div>

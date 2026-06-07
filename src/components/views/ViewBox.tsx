@@ -57,14 +57,16 @@ export default function ViewBox({mode, objects, click}: {
 
             {/* 遍历生成几何体 */}
             {objects.map((obj: GeometryObject | GroupObject, index) =>
-                <Object key={index} obj={obj} selected={selected} setSelected={setSelected} click={click}/>
+                <Object key={index} obj={obj} objects={objects} selected={selected} setSelected={setSelected}
+                        click={click}/>
             )}
         </Canvas>
     )
 }
 
-function Object({obj, selected, setSelected, click}: {
+function Object({obj, objects, selected, setSelected, click}: {
     obj: GeometryObject | GroupObject,
+    objects: Array<GeometryObject | GroupObject>,
     selected: Object3D | null,
     setSelected: (value: Object3D | null) => void,
     click: boolean
@@ -76,6 +78,7 @@ function Object({obj, selected, setSelected, click}: {
                     <Object
                         key={index}
                         obj={child}
+                        objects={objects}
                         selected={selected}
                         setSelected={setSelected}
                         click={click}
@@ -84,11 +87,12 @@ function Object({obj, selected, setSelected, click}: {
             </group>
         );
     }
-    return <GeometryObject obj={obj} selected={selected} setSelected={setSelected} click={click}/>
+    return <GeometryObject obj={obj} objects={objects} selected={selected} setSelected={setSelected} click={click}/>
 }
 
-function GeometryObject({obj, selected, setSelected, click}: {
+function GeometryObject({obj, objects, selected, setSelected, click}: {
     obj: GeometryObject,
+    objects: Array<GeometryObject | GroupObject>,
     selected: Object3D | null,
     setSelected: (value: Object3D | null) => void,
     click: boolean
@@ -101,10 +105,16 @@ function GeometryObject({obj, selected, setSelected, click}: {
 
     return (
         <mesh
+            uuid={obj.uuid}
             ref={meshRef}
             position={obj.position} rotation={obj.rotation}
             scale={obj.scale}
             onClick={(e) => {
+                // if (e.ctrlKey) {
+                //     // console.log(e.object.uuid);
+                //     // console.log(objects)
+                //     console.log(objects.find(obj => obj.uuid === e.object.uuid));
+                // }
                 e.stopPropagation()
                 if (e.delta > 2) return
                 const object = e.object;

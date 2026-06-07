@@ -5,6 +5,7 @@ export type Mode = 'scale' | 'translate' | 'rotate';
 export type Geometries = typeof geometryList[number];
 
 export type GeometryObject = {
+    uuid: string
     label: string
     geometry: Geometries
     args: number[]
@@ -17,6 +18,7 @@ export type GeometryObject = {
 }
 
 export type GroupObject = {
+    uuid: string
     label: string
     children: Array<GeometryObject | GroupObject>
 }

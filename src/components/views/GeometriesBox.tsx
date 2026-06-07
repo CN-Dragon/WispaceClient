@@ -22,8 +22,9 @@ const geometryNames: Record<Geometries, string> = {
 export function GeometriesBox({addObject}: { addObject: (value: Geometries) => void }) {
     return (
         <div className={'flex gap-2 rounded p-1 bg-white absolute z-1 top-5 left-1/2 -translate-x-1/2'}>
-            {geometryList.map((geom) => (
+            {geometryList.map((geom,index) => (
                 <svg
+                    key={index}
                     className={ICON_CLASS}
                     onClick={() => addObject(geom)}
                 >

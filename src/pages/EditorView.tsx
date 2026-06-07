@@ -29,18 +29,23 @@ message.config({
 })
 
 export default function EditorView() {
-    const [objects, setObjects] = useState<Array<GeometryObject | GroupObject>>([{
-        label: 'cs', geometry: 'Box', args: argsMap['Box'], position: [0, 0, 0], rotation: [0, 0, 0],
-        scale: [1, 1, 1], color: '#fff', roughness: 1, metalness: 1
-    },{
-        label: 'cs', children: [{
-            label: 'cs', geometry: 'Box', args: argsMap['Box'], position: [0, 1, 0], rotation: [0, 0, 0],
-            scale: [1, 1, 1], color: '#fff', roughness: 1, metalness: 1
-        },{
-            label: 'cs', geometry: 'Box', args: argsMap['Box'], position: [0, 0, 1], rotation: [0, 0, 0],
-            scale: [1, 1, 1], color: '#fff', roughness: 1, metalness: 1
-        }]
-    }]);
+    const [objects, setObjects] = useState<Array<GeometryObject | GroupObject>>([
+    //     {
+    //     uuid: 'mesh1', label: 'cs', geometry: 'Box', args: argsMap['Box'], position: [2, 0, 0], rotation: [0, 0, 0],
+    //     scale: [1, 1, 1], color: '#fff', roughness: 1, metalness: 1
+    // }, {
+    //     uuid: 'mesh2', label: 'cs', geometry: 'Box', args: argsMap['Box'], position: [4, 0, 0], rotation: [0, 0, 0],
+    //     scale: [1, 1, 1], color: '#fff', roughness: 1, metalness: 1
+    // },{
+    //     uuid: 'group1', label: 'cs', children: [{
+    //         uuid: 'mesh3', label: 'cs', geometry: 'Box', args: argsMap['Box'], position: [0, 1, 0], rotation: [0, 0, 0],
+    //         scale: [1, 1, 1], color: '#fff', roughness: 1, metalness: 1
+    //     }, {
+    //         uuid: 'mesh4', label: 'cs', geometry: 'Box', args: argsMap['Box'], position: [0, 0, 1], rotation: [0, 0, 0],
+    //         scale: [1, 1, 1], color: '#fff', roughness: 1, metalness: 1
+    //     }]
+    // }
+    ]);
     const [mode, setMode] = useState<Mode>('translate');
     const [thinking, setThinking] = useState(false);
     const [building, setBuilding] = useState(false);
@@ -51,8 +56,16 @@ export default function EditorView() {
         setObjects([
             ...objects,
             {
-                label: value, geometry: value, args: argsMap[value], position: [0, 0, 0], rotation: [0, 0, 0],
-                scale: [1, 1, 1], color: '#fff', roughness: 1, metalness: 1
+                uuid: crypto.randomUUID(),
+                label: value,
+                geometry: value,
+                args: argsMap[value],
+                position: [0, 0, 0],
+                rotation: [0, 0, 0],
+                scale: [1, 1, 1],
+                color: '#fff',
+                roughness: 1,
+                metalness: 1
             }
         ]);
     };
@@ -65,7 +78,7 @@ export default function EditorView() {
 
 
     return (
-        <section className={'w-4/5 h-full relative'}>
+        <section className={'w-5/5 h-full relative'}>
             <MessageBox thinking={thinking} setThinking={setThinking} building={building} setBuilding={setBuilding}/>
             <ModeBox mode={mode} setMode={setMode}/>
             <GeometriesBox addObject={addObject}/>
