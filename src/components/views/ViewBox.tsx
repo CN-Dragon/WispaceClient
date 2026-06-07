@@ -1,12 +1,12 @@
 import {GizmoHelper, GizmoViewport, Grid, OrbitControls, TransformControls} from "@react-three/drei";
 import {Canvas} from "@react-three/fiber";
 import {useEffect, useMemo, useRef, useState} from "react";
-import type {GeometriesObject, Mode} from "../../types/common.ts";
+import type {GeometryObject, GroupObject, Mode} from "../../types/common.ts";
 import {Box3, Object3D} from "three";
 
 export default function ViewBox({mode, objects, click}: {
     mode: Mode,
-    objects: GeometriesObject[],
+    objects: Array<GeometryObject | GroupObject>,
     click: boolean,
 }) {
     const [selected, setSelected] = useState<Object3D | null>(null);
@@ -55,33 +55,40 @@ export default function ViewBox({mode, objects, click}: {
                 </>
             )}
 
-            {/*<group*/}
-            {/*    onClick={(e) => {*/}
-            {/*        e.stopPropagation()*/}
-            {/*        if (e.shiftKey) setSelected(e.object)*/}
-            {/*        else setSelected(e.eventObject)*/}
-            {/*    }}*/}
-            {/*>*/}
-            {/*    <mesh position={[0, 0, 0]}>*/}
-            {/*        <boxGeometry args={[1, 1, 1]}/>*/}
-            {/*        <meshStandardMaterial/>*/}
-            {/*    </mesh>*/}
-            {/*    <mesh position={[1, 1, 1]}>*/}
-            {/*        <boxGeometry args={[1, 1, 1]}/>*/}
-            {/*        <meshStandardMaterial/>*/}
-            {/*    </mesh>*/}
-            {/*</group>*/}
-
             {/* 遍历生成几何体 */}
-            {objects.map((obj: GeometriesObject) => (
-                <Geometry key={obj.id} obj={obj} selected={selected} setSelected={setSelected} click={click}/>
-            ))}
+            {objects.map((obj: GeometryObject | GroupObject, index) =>
+                <Object key={index} obj={obj} selected={selected} setSelected={setSelected} click={click}/>
+            )}
         </Canvas>
     )
 }
 
-function Geometry({obj, selected, setSelected, click}: {
-    obj: GeometriesObject,
+function Object({obj, selected, setSelected, click}: {
+    obj: GeometryObject | GroupObject,
+    selected: Object3D | null,
+    setSelected: (value: Object3D | null) => void,
+    click: boolean
+}) {
+    if ('children' in obj) {
+        return (
+            <group>
+                {obj.children.map((child, index) => (
+                    <Object
+                        key={index}
+                        obj={child}
+                        selected={selected}
+                        setSelected={setSelected}
+                        click={click}
+                    />
+                ))}
+            </group>
+        );
+    }
+    return <GeometryObject obj={obj} selected={selected} setSelected={setSelected} click={click}/>
+}
+
+function GeometryObject({obj, selected, setSelected, click}: {
+    obj: GeometryObject,
     selected: Object3D | null,
     setSelected: (value: Object3D | null) => void,
     click: boolean
@@ -98,12 +105,13 @@ function Geometry({obj, selected, setSelected, click}: {
             position={obj.position} rotation={obj.rotation}
             scale={obj.scale}
             onClick={(e) => {
-                e.stopPropagation();
-                if (selected === e.eventObject) return setSelected(null);
+                e.stopPropagation()
                 if (e.delta > 2) return
-                setSelected(e.eventObject);
-            }}
-        >
+                const object = e.object;
+                const isGroupParent = object.parent?.type === 'Group';
+                const target = isGroupParent ? (e.shiftKey ? object : object.parent) : object;
+                setSelected(selected === target ? null : target);
+            }}>
             {{
                 Box: <boxGeometry args={obj.args as any}/>,
                 Sphere: <sphereGeometry args={obj.args as any}/>,

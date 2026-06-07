@@ -4,9 +4,8 @@ export const geometryList = ['Box', 'Sphere', 'Cylinder', 'Plane', 'Cone', 'Toru
 export type Mode = 'scale' | 'translate' | 'rotate';
 export type Geometries = typeof geometryList[number];
 
-export type GeometriesObject = {
-    id: string
-    // label: string
+export type GeometryObject = {
+    label: string
     geometry: Geometries
     args: number[]
     position: [x: number, y: number, z: number]
@@ -17,8 +16,7 @@ export type GeometriesObject = {
     metalness: number
 }
 
-export type Group = {
-    id: string
+export type GroupObject = {
     label: string
-    children: GeometriesObject[]
+    children: Array<GeometryObject | GroupObject>
 }

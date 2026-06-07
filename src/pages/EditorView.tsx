@@ -5,7 +5,7 @@ import {MessageBox} from "../components/views/MessageBox.tsx";
 import {ModeBox} from "../components/views/ModeBox.tsx";
 import {GeometriesBox} from "../components/views/GeometriesBox.tsx";
 import {DialogBox} from "../components/views/DialogBox.tsx";
-import type {Geometries, GeometriesObject, Mode} from "../types/common.ts";
+import type {Geometries, GeometryObject, GroupObject, Mode} from "../types/common.ts";
 
 const argsMap: Record<string, number[]> = {
     Box: [1, 1, 1],
@@ -29,7 +29,18 @@ message.config({
 })
 
 export default function EditorView() {
-    const [objects, setObjects] = useState<GeometriesObject[]>([]);
+    const [objects, setObjects] = useState<Array<GeometryObject | GroupObject>>([{
+        label: 'cs', geometry: 'Box', args: argsMap['Box'], position: [0, 0, 0], rotation: [0, 0, 0],
+        scale: [1, 1, 1], color: '#fff', roughness: 1, metalness: 1
+    },{
+        label: 'cs', children: [{
+            label: 'cs', geometry: 'Box', args: argsMap['Box'], position: [0, 1, 0], rotation: [0, 0, 0],
+            scale: [1, 1, 1], color: '#fff', roughness: 1, metalness: 1
+        },{
+            label: 'cs', geometry: 'Box', args: argsMap['Box'], position: [0, 0, 1], rotation: [0, 0, 0],
+            scale: [1, 1, 1], color: '#fff', roughness: 1, metalness: 1
+        }]
+    }]);
     const [mode, setMode] = useState<Mode>('translate');
     const [thinking, setThinking] = useState(false);
     const [building, setBuilding] = useState(false);
@@ -40,15 +51,14 @@ export default function EditorView() {
         setObjects([
             ...objects,
             {
-                id: Math.random().toString(36).slice(2), geometry: value, args: argsMap[value],
-                position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1], color: '#fff', roughness: 1, metalness: 1
+                label: value, geometry: value, args: argsMap[value], position: [0, 0, 0], rotation: [0, 0, 0],
+                scale: [1, 1, 1], color: '#fff', roughness: 1, metalness: 1
             }
         ]);
     };
 
     const addObjects = (values: any) => {
         if (click) setClick(false)
-        values.id = Math.random().toString(36).slice(2);
         values.position[1] += 0.1
         setObjects(prev => [...prev, values]);
     };
