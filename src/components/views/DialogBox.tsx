@@ -36,8 +36,15 @@ export function DialogBox({addObjects, thinking, setThinking, building, setBuild
 
     const sendMessage = async () => {
         if (!openai) return message.warning('请输入模型API Key')
-        if (input.length <= 50) await reviseMessage()
-        if (input && !thinking) {
+
+        let currentInput = input;
+        if (input.length <= 50) {
+            const revised = await reviseMessage();
+            if (typeof revised === 'string' && revised) {
+                currentInput = revised;
+            }
+        }
+        if (currentInput && !thinking) {
             setThinking(true)
             try {
                 const stream = await openai.chat.completions.create({
@@ -45,9 +52,6 @@ export function DialogBox({addObjects, thinking, setThinking, building, setBuild
                         {
                             role: "system",
                             content: "你是专业的3D建模师，精通 Three.js 的几何体、材质、网格以及物体结构和场景结构。请根据用户的自然语言描述，生成一个符合物理常识，无穿模、无悬浮的 Three.js 场景模型，输出为严格的 JSON 格式。\n" +
-                                "## 规则\n" +
-                                "1. 根据物体需要设置 rotation（弧度），例如“地面”→ [Math.PI/2,0,0]，“轮子”→ [0,0,Math.PI/2]。\n" +
-                                "2. 严格控制位置距离，避免模型之间出现悬浮或穿模现象。\n" +
                                 "## 支持的几何体geometry以及参数args\n" +
                                 "- Box: [width, height, depth]\n" +
                                 "- Sphere: [radius, widthSegments,heightSegments]\n" +
@@ -60,13 +64,15 @@ export function DialogBox({addObjects, thinking, setThinking, building, setBuild
                                 "- Circle: [radius, segments]\n" +
                                 "- TorusKnot: [radius, tube, tubularSegments, radialSegments, p, q]\n" +
                                 "- Icosahedron / Dodecahedron / Octahedron / Tetrahedron: [radius, detail]" +
+                                "## 规则\n" +
+                                "1. 根据物体需要设置 rotation（弧度），例如“地面”→ [Math.PI/2,0,0]，“轮子”→ [0,0,Math.PI/2]。\n" +
+                                "2. 严格控制位置距离，避免模型之间出现悬浮或穿模现象。\n" +
                                 "输出格式为 JSON，示例：{result: [{geometry: 'Box', args: [width,height,depth]," +
-                                "position: [x,y,z], rotation: [x,y,z], scale:[x,y,z] color: '#fff', roughness: 1," +
-                                "metalness: 1},...]}"
+                                "position: [x,y,z], scale:[x,y,z] color: '#fff', rotation: [x,y,z]},...]}"
                         },
                         {
                             "role": "user",
-                            "content": input
+                            "content": currentInput
                         }],
                     model: model,
                     stream: true
@@ -119,6 +125,7 @@ export function DialogBox({addObjects, thinking, setThinking, building, setBuild
                     model: model,
                     stream: true
                 })
+                let revisedText = '';
                 let isFirstChunk = true;
                 for await (const chunk of stream) {
                     const content = chunk.choices[0]?.delta?.content;
@@ -128,8 +135,10 @@ export function DialogBox({addObjects, thinking, setThinking, building, setBuild
                             isFirstChunk = false;
                         }
                         setInput(prev => prev + content);
+                        revisedText += content;
                     }
                 }
+                return revisedText;
             } catch (err) {
                 if (err instanceof Error) {
                     message.error(err.message);

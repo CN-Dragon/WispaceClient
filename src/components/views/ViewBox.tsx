@@ -138,8 +138,10 @@ function GeometryObject({obj, selected, setSelected, click}: {
                 Octahedron: <octahedronGeometry args={obj.args as any}/>,
                 Tetrahedron: <tetrahedronGeometry args={obj.args as any}/>,
             }[obj.geometry]}
-            <meshStandardMaterial side={2} color={obj.color} roughness={obj.roughness}
-                                  metalness={obj.metalness}/>
+            <meshStandardMaterial side={2} color={obj.color}
+                                  // roughness={obj.roughness}
+                                  // metalness={obj.metalness}
+            />
         </mesh>
     )
 }
